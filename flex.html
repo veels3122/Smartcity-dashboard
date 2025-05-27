@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flux Grid Weather – Smart Mall Analytics</title>
+  <link rel="icon" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/icons/umbrella.svg" type="image/svg+xml">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: "#1677ff",
+            secondary: "#22c55e",
+            skybg: "#B7DCEE",
+            dark: "#0f172a",
+            cardbg: "rgba(255, 255, 255, 0.92)",
+            projectDescBg: "rgba(255, 255, 255, 0.96)",
+            helperPanelBg: "rgba(230, 247, 255, 0.9)",
+            lightText: "#334155",
+            mediumText: "#475569",
+            accentOrange: "#f97316",
+            accentPurple: "#8b5cf6",
+            accentCyan: "#06b6d4",
+            accentPink: "#ec4899",
+          }
+        }
+      }
+    };
+
+    // Esta es la URL base de tu informe incrustado que proporcionaste.
+    const baseURL = "https://app.powerbi.com/view?r=eyJrIjoiNWUyNDIxM2ItMTY5My00MzE3LWJlYzEtMDc2MTcxMmViMzhmIiwidCI6IjA3ZGE2N2EwLTFmNDMtNGU4Yy05NzdmLTVmODhiNjQ3MGVlNiIsImMiOjR9";
+    const pages = {
+      overview:         "f9d5cee650cd5acd8c5e",
+      climateDetails:   "174feae47038d967ea71",
+      footfallDetails:  "049e4fe6b44ea81ea028",
+      rainVsFootfall:   "ae8426e754b7d750b1e0",
+      tempAndHumidity:  "c89cd03ed7a1084d20a1",
+      peakAnalysis:     "e2d9f8883040a7abd264"
+    };
+
+    // URL para la imagen estática del panel derecho
+    const staticSideImageURL = "https://images.unsplash.com/photo-1705077296278-d82dd5c8662f?q=80&w=800&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+
+    const dashboardHelpers = {
+      overview: {
+        title: "Explorando el Overview",
+        imageSrc: "https://images.unsplash.com/photo-1700343522132-e603d84101bf?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8Y2xpbWElMjBjaXVkYWR8ZW58MHx8MHx8fDA%3D",
+        altText: "Vista general del clima en la ciudad",
+        tips: [
+          "Observa los KPIs principales para un resumen rápido.",
+          "Compara periodos para identificar tendencias.",
+          "Busca correlaciones iniciales entre afluencia y factores externos."
+        ]
+      },
+      climateDetails: {
+        title: "Detalles del Clima",
+        imageSrc: "https://images.unsplash.com/photo-1617438487771-e11b6f42f448?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGNsaW1hJTIwY2l1ZGFkfGVufDB8fDB8fHww",
+        altText: "Detalles climáticos y gráficos",
+        tips: [
+          "Analiza las fluctuaciones de temperatura, humedad y lluvia.",
+          "Identifica días con condiciones climáticas extremas.",
+          "Cruza esta información con los datos de afluencia."
+        ]
+      },
+      footfallDetails: {
+        title: "Análisis de Afluencia",
+        imageSrc: "https://plus.unsplash.com/premium_photo-1733306548826-95daff988ae6?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8YWZsdWVuY2lhJTIwZGUlMjBnZW50ZSUyMGFuYWxpc2lzfGVufDB8fDB8fHww",
+        altText: "Análisis de afluencia de personas",
+        tips: [
+          "Revisa las métricas de entradas, salidas y tiempo de permanencia.",
+          "Compara datos por día, hora o eventos especiales.",
+          "Busca patrones de comportamiento de los visitantes."
+        ]
+      },
+      rainVsFootfall: {
+        title: "Lluvia vs. Afluencia",
+        imageSrc: "https://images.unsplash.com/photo-1613739118925-cde1e8f5d65b?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8bGx1dmlhJTIwZ2VudGV8ZW58MHx8MHx8fDA%3D",
+        altText: "Personas caminando bajo la lluvia",
+        tips: [
+          "Observa cómo la lluvia afecta el número de visitantes.",
+          "Distingue el impacto de lluvias ligeras vs. fuertes.",
+          "Considera si hay un retraso en el efecto de la lluvia."
+        ]
+      },
+      tempAndHumidity: {
+        title: "Temperatura y Humedad",
+        imageSrc: "https://images.unsplash.com/photo-1597132825820-094d481f1c4b?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8dGVtcGVyYXR1cmElMjB5JTIwaHVtZWRhZHxlbnwwfHwwfHx8MA%3D%3D",
+        altText: "Termómetro y símbolo de humedad",
+        tips: [
+          "Analiza cómo se correlacionan temperatura y humedad con la afluencia.",
+          "Busca los niveles de confort climático que atraen más visitantes.",
+          "Considera el impacto en el tiempo de permanencia."
+        ]
+      },
+      peakAnalysis: {
+        title: "Análisis de Picos",
+        imageSrc: "https://plus.unsplash.com/premium_photo-1676673189412-56a98d221c11?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8YW5hbGlzaXMlMjBkZSUyMHBpY29zfGVufDB8fDB8fHww",
+        altText: "Gráfico mostrando picos de análisis",
+        tips: [
+          "Identifica horas y días con mayor afluencia consistentemente.",
+          "Analiza qué factores coinciden con estos picos.",
+          "Utiliza esta info para optimizar recursos."
+        ]
+      }
+    };
+
+    const mainSections = ["projectInfoSection", "dashboardSelectionSection", "dashboardSection"];
+
+    function showMainSection(sectionIdToShow) {
+      mainSections.forEach(id => {
+        const sectionElement = document.getElementById(id);
+        if (sectionElement) {
+            sectionElement.classList.toggle("hidden", id !== sectionIdToShow);
+        }
+      });
+    }
+
+    function proceedFromProjectInfo() {
+      document.getElementById("projectInfoSection").classList.add("hidden");
+      document.getElementById("welcomeModal").classList.remove("hidden");
+      document.getElementById("userNameInput").focus();
+    }
+
+    function saveName() {
+      const nameInput = document.getElementById("userNameInput");
+      const name = nameInput.value.trim();
+      if (name) {
+        localStorage.setItem("fluxUserForHeader", name);
+        document.querySelectorAll(".user-name").forEach(el => (el.textContent = name));
+        document.getElementById("welcomeModal").classList.add("hidden");
+        showMainSection("dashboardSelectionSection");
+      } else {
+        nameInput.focus();
+        alert("Por favor, tu nombre es necesario para continuar.");
+      }
+    }
+
+    function updateHelperPanel(pageKey) {
+        const helperData = dashboardHelpers[pageKey];
+        const panel = document.getElementById("leftHelperPanel");
+        const rightStaticImgContainer = document.getElementById("rightStaticHelperContainer");
+        const rightStaticImg = document.getElementById("rightStaticHelperImage");
+
+        if (helperData && panel && rightStaticImg && rightStaticImgContainer) {
+            document.getElementById("helperTitle").textContent = helperData.title;
+            document.getElementById("helperImage").src = helperData.imageSrc;
+            document.getElementById("helperImage").alt = helperData.altText;
+            
+            const tipsList = document.getElementById("helperTipsList");
+            tipsList.innerHTML = "";
+            helperData.tips.forEach(tipText => {
+                const listItem = document.createElement("li");
+                listItem.textContent = tipText;
+                tipsList.appendChild(listItem);
+            });
+            
+            rightStaticImg.src = staticSideImageURL;
+
+            panel.classList.remove("opacity-0", "translate-y-10", "lg:hidden");
+            panel.classList.add("opacity-100", "translate-y-0");
+            rightStaticImgContainer.classList.remove("hidden");
+
+        } else if(panel) { 
+            panel.classList.add("opacity-0", "translate-y-10", "lg:hidden");
+            panel.classList.remove("opacity-100", "translate-y-0");
+            if(rightStaticImgContainer) rightStaticImgContainer.classList.add("hidden");
+            console.warn("No se encontró información de ayuda completa para:", pageKey);
+        }
+    }
+
+    function loadDashboardPage(pageKey) {
+      if (!pages[pageKey]) {
+        console.error(`Error: pageKey '${pageKey}' no existe en 'pages'.`);
+        alert("Error: Configuración de dashboard incorrecta.");
+        return;
+      }
+      const iframe = document.getElementById("pbiFrame");
+      const pageName = pages[pageKey];
+      iframe.src = `${baseURL}&pageName=${pageName}`; // Construcción correcta
+      console.log(`Cargando Power BI - Clave: '${pageKey}', ReportSectionID: '${pageName}', URL: ${iframe.src}`);
+
+      updateHelperPanel(pageKey);
+      showMainSection("dashboardSection");
+    }
+
+    function goToDashboardSelection() {
+        const nameForHeader = localStorage.getItem("fluxUserForHeader") || "Visitante";
+        document.querySelectorAll(".user-name").forEach(el => (el.textContent = nameForHeader));
+        showMainSection("dashboardSelectionSection");
+        
+        const helperPanel = document.getElementById("leftHelperPanel");
+        if(helperPanel) {
+            helperPanel.classList.add("opacity-0", "translate-y-10", "lg:hidden");
+            helperPanel.classList.remove("opacity-100", "translate-y-0");
+        }
+        const rightStaticImgContainer = document.getElementById("rightStaticHelperContainer");
+        if(rightStaticImgContainer) rightStaticImgContainer.classList.add("hidden");
+    }
+
+    window.onload = () => {
+      const nameForHeader = localStorage.getItem("fluxUserForHeader") || "Visitante";
+      document.querySelectorAll(".user-name").forEach(el => (el.textContent = nameForHeader));
+
+      showMainSection("projectInfoSection");
+      document.getElementById("welcomeModal").classList.add("hidden");
+      
+      const helperPanel = document.getElementById("leftHelperPanel");
+      if(helperPanel) {
+         helperPanel.classList.add("opacity-0", "translate-y-10", "lg:hidden");
+      }
+      const rightStaticImgContainer = document.getElementById("rightStaticHelperContainer");
+      if(rightStaticImgContainer) rightStaticImgContainer.classList.add("hidden");
+
+      ["dashboardSelectionSection", "dashboardSection"].forEach(id => {
+          const section = document.getElementById(id);
+          if(section) section.classList.add("hidden");
+      });
+    };
+  </script>
+  <style>
+    body { background-color: #B7DCEE; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .card-hover:hover {
+      transform: translateY(-6px) scale(1.03);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.22);
+    }
+    .objective-list li, .insights-list li, .helper-tips-list li { margin-bottom: 0.6rem; padding-left: 1.85rem; position: relative; line-height: 1.6; }
+    .objective-list li::before { content: '🎯'; position: absolute; left: 0; font-size: 1.05rem; top: 0.1rem; }
+    .insights-list li::before { content: '💡'; position: absolute; left: 0; font-size: 1.05rem; top: 0.1rem; }
+    .helper-tips-list li::before { content: '⭐'; position: absolute; left: 0; font-size: 0.9rem; top: 0.2rem; color: #F59E0B; }
+    #leftHelperPanel { transition: opacity 0.5s ease-out, transform 0.5s ease-out; }
+  </style>
+</head>
+<body class="text-dark flex flex-col min-h-screen antialiased">
+
+  <div id="welcomeModal" class="fixed inset-0 bg-gray-900/80 backdrop-blur-md flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full text-center transform transition-all scale-95 opacity-0 animate-fadeInScale">
+      <style>.animate-fadeInScale { animation: fadeInScale 0.3s forwards; } @keyframes fadeInScale { to { transform: scale(1); opacity: 1;} }</style>
+      <svg class="w-20 h-20 text-primary mx-auto mb-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+      <h2 class="text-3xl font-bold mb-3 text-gray-800">¡Bienvenido/a de Nuevo!</h2>
+      <p class="text-gray-600 mb-8 text-lg">Por favor, ingresa tu nombre para continuar con el análisis.</p>
+      <input id="userNameInput" type="text" placeholder="Tu Nombre" class="w-full rounded-lg border-2 border-gray-300 px-5 py-3.5 focus:outline-none focus:ring-3 focus:ring-primary/50 focus:border-primary mb-7 text-lg transition-shadow duration-200 shadow-sm" />
+      <button onclick="saveName()" class="w-full bg-secondary text-white rounded-lg py-3.5 text-xl font-semibold hover:bg-green-500 transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">Ingresar</button>
+    </div>
+  </div>
+
+  <header class="bg-primary text-white py-4 px-5 sm:px-8 flex items-center justify-between shadow-xl sticky top-0 z-40">
+    <div class="flex items-center gap-3.5">
+      <img src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/icons/umbrella.svg" alt="Icono paraguas" width="32" height="32">
+      <h1 class="hidden md:block font-bold text-2xl tracking-tight">Flux Grid Analytics</h1>
+      <h1 class="md:hidden font-bold text-xl tracking-tight">Flux Grid</h1>
+    </div>
+    <div class="flex items-center gap-3 sm:gap-5">
+        <span class="text-sm sm:text-base">Usuario: <span class="user-name font-bold">Visitante</span></span>
+        <button onclick="goToDashboardSelection()" title="Volver a Selección de Dashboards" class="bg-white/25 hover:bg-white/40 text-white font-semibold py-2 px-3 sm:px-4 rounded-md transition-colors text-xs sm:text-sm shadow-sm">
+            📊 Paneles
+        </button>
+    </div>
+  </header>
+
+  <section id="projectInfoSection" class="flex-1 flex flex-col items-center justify-center p-4 sm:p-6">
+    <div class="bg-projectDescBg p-6 sm:p-8 md:p-10 rounded-xl shadow-2xl max-w-5xl w-full transform transition-all duration-500 ease-out">
+      <div class="text-center mb-6 sm:mb-8">
+        <img src="https://images.unsplash.com/photo-1551033406-611cf9a28f67?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fGNpdHklMjBkYXRhJTIwYW5hbHlzaXN8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=1000&q=80" alt="Análisis de Datos y Clima Urbano" class="w-full max-w-xl mx-auto mb-6 sm:mb-8 rounded-lg shadow-xl aspect-video object-cover">
+        <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold text-primary mb-3 sm:mb-4">📊 Proyecto: Flux Grid Weather</h2>
+        <p class="text-md sm:text-lg md:text-xl text-lightText italic">
+          Monitoreo de afluencia y clima para optimizar la gestión de centros comerciales en ciudades inteligentes.
+        </p>
+      </div>
+      <div class="text-left my-6 sm:my-8 space-y-6">
+        <div>
+            <h3 class="text-xl sm:text-2xl md:text-3xl font-semibold text-primary mb-2 sm:mb-3">🎯 Objetivo General</h3>
+            <p class="text-mediumText text-base sm:text-lg leading-relaxed">
+            Diseñar y validar un sistema <strong>big data</strong> que fusione registros históricos de afluencia peatonal y clima para generar, en tiempo real, un flujo sintético minuto a minuto, optimizando la gestión operativa de un centro comercial en una ciudad inteligente.
+            </p>
+        </div>
+        <div>
+            <h3 class="text-xl sm:text-2xl md:text-3xl font-semibold text-primary mb-2 sm:mb-3">✅ Objetivos Específicos</h3>
+            <ul class="list-none objective-list text-mediumText space-y-1.5 text-sm sm:text-base md:text-lg">
+            <li>Recopilar, depurar y unificar 10+ años de datos abiertos de <em>footfall</em> y variables meteorológicas.</li>
+            <li>Modelar estadísticamente la relación afluencia‑clima y derivar distribuciones base.</li>
+            <li>Implementar un generador de eventos sintéticos por minuto en Kafka.</li>
+            <li>Desplegar un procesador de <em>stream</em> para agregar datos y detectar anomalías en el flujo afluencia‑clima.</li>
+            <li>Almacenar las series de tiempo en una base de datos temporal y exponer un <em>dashboard</em> en Power BI con KPIs y alertas.</li>
+            <li>Evaluar la precisión de la simulación y la utilidad operativa del sistema mediante casos de negocio relevantes.</li>
+            </ul>
+        </div>
+        <div>
+            <h3 class="text-xl sm:text-2xl md:text-3xl font-semibold text-primary mb-2 sm:mb-3">💡 Ideas para el Análisis con estos Datos</h3>
+            <p class="text-mediumText text-base sm:text-lg leading-relaxed mb-3">
+            Los siguientes paneles te permitirán explorar diversas relaciones y extraer información valiosa. Considera estas preguntas como punto de partida para tu análisis:
+            </p>
+            <ul class="list-none insights-list text-mediumText space-y-1.5 text-sm sm:text-base md:text-lg">
+                <li>¿Cómo fluctúa la afluencia general (Overview) en diferentes días de la semana o épocas del año?</li>
+                <li>Al observar "Climate Details" y "Footfall Details", ¿existe un umbral de temperatura o nivel de lluvia que impacte significativamente las entradas o el tiempo de permanencia?</li>
+                <li>El panel "Rain vs Footfall", ¿revela si las lluvias cortas tienen un efecto distinto a las lluvias prolongadas en la afluencia?</li>
+                <li>Comparando "Temperature & Humidity" con "Peak Analysis", ¿las horas pico de visitas coinciden con los momentos de mayor confort climático?</li>
+                <li>¿Se pueden identificar patrones de comportamiento atípicos (anomalías) en "Footfall Details" durante eventos climáticos extremos documentados en "Climate Details"?</li>
+                <li>¿Qué estrategias operativas (personal, promociones, gestión energética) podrían ajustarse basándose en las predicciones o patrones observados en "Peak Analysis" y su correlación con el clima?</li>
+            </ul>
+        </div>
+      </div>
+      <button onclick="proceedFromProjectInfo()" class="w-full mt-6 sm:mt-8 bg-secondary text-white font-bold px-8 py-4 rounded-lg shadow-xl hover:bg-green-500 transition-all duration-300 text-xl hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-400 focus:ring-opacity-50">
+        Ingresar Nombre y Explorar Datos ➔
+      </button>
+    </div>
+  </section>
+
+  <section id="dashboardSelectionSection" class="flex-1 flex flex-col items-center p-4 sm:p-6 hidden">
+    <div class="text-center mb-8 mt-2 sm:mt-4">
+      <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold text-primary mb-2 sm:mb-3">Paneles de Visualización</h2>
+      <p class="max-w-3xl text-md sm:text-lg text-lightText mx-auto">
+        Elige un panel para explorar los datos y análisis detallados:
+      </p>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 w-full max-w-7xl">
+      <div class="bg-cardbg p-5 sm:p-6 rounded-xl shadow-xl border border-gray-200/70 card-hover transition-all duration-300 flex flex-col">
+        <h3 class="text-xl sm:text-2xl font-semibold text-primary mb-2.5 text-center">Overview</h3>
+        <p class="text-sm sm:text-base text-mediumText mb-5 text-center flex-grow">Resumen general y KPIs principales del centro comercial.</p>
+        <button onclick="loadDashboardPage('overview')" class="w-full mt-auto bg-primary text-white rounded-lg py-3 text-base sm:text-lg font-semibold hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg">Ver Overview</button>
+      </div>
+      <div class="bg-cardbg p-5 sm:p-6 rounded-xl shadow-xl border border-gray-200/70 card-hover transition-all duration-300 flex flex-col">
+        <h3 class="text-xl sm:text-2xl font-semibold text-secondary mb-2.5 text-center">Climate Details</h3>
+        <p class="text-sm sm:text-base text-mediumText mb-5 text-center flex-grow">Análisis detallado de las variables climáticas: temperatura, lluvia, humedad.</p>
+        <button onclick="loadDashboardPage('climateDetails')" class="w-full mt-auto bg-secondary text-white rounded-lg py-3 text-base sm:text-lg font-semibold hover:bg-green-500 transition-colors shadow-md hover:shadow-lg">Detalles del Clima</button>
+      </div>
+      <div class="bg-cardbg p-5 sm:p-6 rounded-xl shadow-xl border border-gray-200/70 card-hover transition-all duration-300 flex flex-col">
+        <h3 class="text-xl sm:text-2xl font-semibold text-accentPurple mb-2.5 text-center">Footfall Details</h3>
+        <p class="text-sm sm:text-base text-mediumText mb-5 text-center flex-grow">Información sobre la afluencia: entradas, salidas y tiempo de permanencia.</p>
+        <button onclick="loadDashboardPage('footfallDetails')" class="w-full mt-auto bg-accentPurple text-white rounded-lg py-3 text-base sm:text-lg font-semibold hover:bg-purple-700 transition-colors shadow-md hover:shadow-lg">Detalles de Afluencia</button>
+      </div>
+      <div class="bg-cardbg p-5 sm:p-6 rounded-xl shadow-xl border border-gray-200/70 card-hover transition-all duration-300 flex flex-col">
+        <h3 class="text-xl sm:text-2xl font-semibold text-accentCyan mb-2.5 text-center">Rain vs Footfall</h3>
+        <p class="text-sm sm:text-base text-mediumText mb-5 text-center flex-grow">Correlación entre los eventos de lluvia y el impacto en la afluencia de visitantes.</p>
+        <button onclick="loadDashboardPage('rainVsFootfall')" class="w-full mt-auto bg-accentCyan text-white rounded-lg py-3 text-base sm:text-lg font-semibold hover:bg-cyan-700 transition-colors shadow-md hover:shadow-lg">Lluvia vs Afluencia</button>
+      </div>
+      <div class="bg-cardbg p-5 sm:p-6 rounded-xl shadow-xl border border-gray-200/70 card-hover transition-all duration-300 flex flex-col">
+        <h3 class="text-xl sm:text-2xl font-semibold text-accentPink mb-2.5 text-center">Temperature & Humidity</h3>
+        <p class="text-sm sm:text-base text-mediumText mb-5 text-center flex-grow">Impacto de temperatura y humedad en el comportamiento de visitantes y tiempo en tienda.</p>
+        <button onclick="loadDashboardPage('tempAndHumidity')" class="w-full mt-auto bg-accentPink text-white rounded-lg py-3 text-base sm:text-lg font-semibold hover:bg-pink-700 transition-colors shadow-md hover:shadow-lg">Temperatura y Humedad</button>
+      </div>
+      <div class="bg-cardbg p-5 sm:p-6 rounded-xl shadow-xl border border-gray-200/70 card-hover transition-all duration-300 flex flex-col">
+        <h3 class="text-xl sm:text-2xl font-semibold text-accentOrange mb-2.5 text-center">Peak Analysis</h3>
+        <p class="text-sm sm:text-base text-mediumText mb-5 text-center flex-grow">Análisis de horas pico, días de mayor afluencia y los factores determinantes.</p>
+        <button onclick="loadDashboardPage('peakAnalysis')" class="w-full mt-auto bg-accentOrange text-white rounded-lg py-3 text-base sm:text-lg font-semibold hover:bg-orange-700 transition-colors shadow-md hover:shadow-lg">Análisis de Picos</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="dashboardSection" class="flex-1 flex-col hidden p-3 sm:p-4">
+    <div class="flex flex-col lg:flex-row gap-4 w-full max-w-full mx-auto items-start">
+      
+      <div id="leftHelperPanel" class="lg:w-1/3 xl:w-1/4 p-4 bg-helperPanelBg rounded-lg shadow-lg mt-4 lg:mt-0 opacity-0 translate-y-10 lg:sticky lg:top-28 self-start"> 
+        <img id="helperImage" src="" alt="Guía del Panel" class="w-full rounded-md mb-3 shadow aspect-video object-cover">
+        <h4 id="helperTitle" class="text-lg font-bold text-primary mb-2">Tips de Exploración</h4>
+        <ul id="helperTipsList" class="text-sm text-slate-700 space-y-1.5 helper-tips-list">
+          <li>Selecciona un dashboard para ver guías específicas.</li>
+        </ul>
+      </div>
+
+      <div class="flex-1 min-w-0 w-full order-none"> 
+        <div class="w-full max-w-none xl:max-w-7xl mx-auto bg-white shadow-2xl rounded-xl overflow-hidden h-full flex flex-col"> 
+          <iframe id="pbiFrame" title="Dashboard Interactivo Power BI" class="w-full flex-grow border-0 min-h-[80vh]" allowfullscreen="true" loading="lazy"></iframe>
+        </div>
+      </div>
+      
+      <div id="rightStaticHelperContainer" class="hidden lg:flex lg:w-1/5 xl:w-48 p-3 flex-col items-center justify-start self-start mt-4 lg:mt-0">
+         <div class="bg-white/70 backdrop-blur-sm p-3 rounded-lg shadow-md h-full flex flex-col items-center">
+            <img id="rightStaticHelperImage" src="" alt="Ayuda UX Derecha" class="w-full max-w-[150px] rounded-lg shadow-md mb-3 object-cover">
+            <p id="rightStaticHelperText" class="text-xs text-center text-slate-600 leading-tight flex-grow">Contexto adicional e ideas.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="bg-dark text-white text-xs sm:text-sm py-3 text-center mt-auto shadow-inner">
+    &copy; <span id="currentYear"></span> Flux Grid Analytics &bull; Smart City University Project.
+    <script>document.getElementById("currentYear").textContent = new Date().getFullYear();</script>
+  </footer>
+</body>
+</html>
